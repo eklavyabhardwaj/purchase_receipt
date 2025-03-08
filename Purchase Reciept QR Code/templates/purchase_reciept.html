@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Purchase Receipt Search</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='ELEC.png') }}">
+</head>
+<body class="bg-white p-8">
+    <div class="max-w-4xl mx-auto p-20">
+        <a href="/" class="text-blue-600  hover:text-blue-800 mb-4 inline-block">← Back to Home</a>
+
+        <h1 class="text-3xl font-bold mb-8" >Purchase Receipt Search</h1>
+        <form action="/search_pr" method="post" class="mb-8">
+            <input type="text" name="search_name" placeholder="Enter GRN Number or Unique EIPL Code..."  
+                   class="w-full p-4 border rounded-lg shadow-sm">
+            <button type="submit" 
+                    class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Search
+            </button>
+        </form>
+    </div>
+</body>
+</html>

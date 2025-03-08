@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Purchase Receipt Results</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">    
+    <!-- Keep all the original styles -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='ELEC.png') }}">
+    <style>
+        /* Previous styles remain the same until unique-code-container */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-container.active, .print-container.active * {
+                visibility: visible;
+            }
+            .print-container.active {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 190mm;
+                min-height: 29mm;
+                max-height: 30mm;
+                padding-top: 5%;
+                padding: 0;
+                padding-top: 15px;
+                margin: 0;
+                font-family: Arial, sans-serif;
+                font-size: 19pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 2mm;
+                margin-left: 25px;
+            }
+            .print-grid > div {
+                margin: 0;
+                padding: 0;
+            }
+            .inline-info {
+                display: flex;
+                justify-content: space-between;
+                position: relative;
+            }
+            .info-item {
+                white-space: nowrap;
+            }
+            .info-item-right {
+                position: absolute;
+            }
+            .info-item-right .label-text {
+                position: absolute;
+                right: 0;
+                text-align: left;
+                white-space: nowrap;
+            }
+            .date-code-right .label-text {
+                right: 30mm;
+            }
+            .grn-date-right .label-text {
+                right: 37mm;
+            }
+            .qty-right .label-text {
+                right: 23mm;
+            }
+            .info-item-right {
+                right: 0;
+            }
+            .date-code-right {
+                right: 15mm;
+            }
+            .grn-date-right {
+                right: 10mm;
+            }
+            .qty-right {
+                right: 41mm;
+            }
+            .label-text {
+                font-weight: bold;
+            }
+        }
+        
+        .print-container {
+            display: none;
+        }
+        
+        .print-container.active {
+            display: block;
+        }
+
+        /* Updated QR code container styles */
+        .unique-code-container.active {
+            font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 10pt;
+        }
+
+        /* New QR code layout styles */
+        .qr-code-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            /* padding: 18px; */
+            gap: 2px;
+        }
+
+        .qr-code-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding-left: 25px;
+            padding-top: -25px;
+        }
+
+        .qr-code-item img {
+            width: 175px;
+            height: 180px;
+        }
+        
+        /* Hide result containers by default */
+        .result-container {
+            display: none;
+        }
+        
+        /* Show active result container */
+        .result-container.active {
+            display: block;
+        }
+    </style>
+    <!-- Keep other styles as is -->
+    <style>
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            position: relative;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .blur-content {
+            filter: blur(4px);
+            pointer-events: none;
+        }
+
+        /* Hide QR codes but keep them in DOM */
+        .hidden-qr {
+            display: none;
+        }
+    </style>
+    <style>
+        .print-container {
+            display: none; /* Initially hide print containers */
+        }
+        
+        .print-container.active {
+            display: block; /* Show the active print container */
+        }
+
+        .unique-code-container2.active {
+            font-size: 17pt; /* Smaller font size for unique code labels */
+        }
+        
+        .print-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2mm;
+            margin-left: 25px;
+        }
+
+        /* Grid layout for unique codes: 2 columns, 4 rows */
+        .unique-code-grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(4, auto);
+            gap: 2mm;
+            margin-left: 40px;
+            margin-right: 15px;
+            padding-top: 10px; /* Increased padding to replace <br> tags */
+        }
+        .print-grid > div, .unique-code-grid2 > div {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div id="main-content" class="max-w-4xl mx-auto">
+        <a href="/" class="text-blue-600 hover:text-blue-800 mb-4 inline-block">← Back to Home</a>
+        <form action="/search_pr" method="post" class="mb-8">
+            <input type="text" name="search_name" placeholder="Enter GRN Number or Unique EIPL Code..."  
+                   class="w-full p-4 border rounded-lg shadow-sm">
+            <button type="submit" 
+                    class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Search
+            </button>
+        </form>
+        
+        <h1 class="text-3xl font-bold mb-8">Search Results</h1>
+        
+        {% if results %}
+        <div class="mb-6">
+            <label for="item-selector" class="block text-gray-700 font-medium mb-2">Select Item:</label>
+            <select id="item-selector" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {% for result in results %}
+                    <option value="{{ loop.index }}">{{ result['item_name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+            
+        <!-- Result containers -->
+        {% for result in results %}
+        <div id="result-container-{{loop.index}}" class="result-container bg-white rounded-lg shadow-md p-6 mb-4 {% if loop.index == 1 %}active{% endif %}">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-gray-600">GRN Name:</p>
+                    <p class="font-bold">
+                        <a href="https://erpv14.electrolabgroup.com/app/purchase-receipt/{{ result.name }}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline">
+                            {{ result.name }}
+                        </a>
+                    </p>
+                </div>      
+                <div id="qr-data-{{loop.index}}" class="hidden-qr">
+                    {% set qr_data_uri = generate_qr_code(result.name) %}
+                    <img src="{{ qr_data_uri }}" alt="QR Code for {{ result.name }}" />
+                </div>
+              
+                <div>
+                    <p class="text-gray-600">Item Name:</p>
+                    <p class="font-bold">{{ result['item_name'] }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600">GRN Date:</p>
+                    <p class="font-bold">{{ result.posting_date }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600">Quantity:</p>
+                    <p class="font-bold">{{ result['qty'] }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600">Batch No/Date Code:</p>
+                    <p class="font-bold">{{ result['custom_batch_code'] }} / {{ result['custom_date_code'] }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600">Supplier Name:</p>
+                    <p class="font-bold">{{ result.supplier_name }}</p>
+                </div>
+                {% if result.eipl_unique_batch_code %}
+                <div>
+                    <p class="text-gray-600">EIPL Unique Batch Code:</p>
+                    <p class="font-bold">{{ result.eipl_unique_batch_code }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <button onclick="printLabel({{loop.index}})" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded no-print">
+                Print Label
+            </button>
+            <button onclick="printUniqueCodeMultiple({{loop.index}})" class="mt-4 bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded no-print">
+                Print Multiple EIPL Code
+            </button>
+            <button 
+                onclick="showQRCode({{loop.index}}, '{{ result.name }}')"  class="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded no-print">
+                <i class="fa-solid fa-qrcode"></i> View QR Code
+            </button>
+            <button onclick="printUniqueCode({{loop.index}})" class="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded no-print">
+                Print Unique Code with QR Code
+            </button>
+            
+            <div id="print-container-{{loop.index}}" class="print-container">
+                <div class="print-grid">
+                    <br>
+                    <div>
+                        <span class="label-text">Item Name:</span> 
+                        {{ result['item_name']|truncate(43, true, '') }}
+                    </div>
+            
+                    <div class="inline-info">
+                        <div class="info-item">
+                            <span class="label-text">Batch No:</span> {{ result['custom_batch_code'] }}
+                        </div>
+                        <div class="info-item-right date-code-right">
+                            <span class="label-text">Date Code:</span> {{ result['custom_date_code'] }}
+                        </div>
+                    </div>
+            
+                    <div class="inline-info">
+                        <div class="info-item">
+                            <span class="label-text">GRN Name:</span> {{ result.name }}
+                        </div>
+                        <div class="info-item-right grn-date-right">
+                            <span class="label-text">GRN Date:</span> {{ result.posting_date }}
+                        </div>
+                    </div>
+                    
+                    {% if result.eipl_unique_batch_code %}
+                    <div class="inline-info">
+                        <div class="info-item">
+                            <span class="label-text">EIPL Code:</span> {{ result.eipl_unique_batch_code }}
+                        </div>
+                        <div class="info-item-right qty-right">
+                            <span class="label-text">QTY:</span> {{ result['qty'] }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- only unque batch code printing -->
+            <div id="unique-code-container-{{loop.index}}" class="print-container unique-code-container">
+                <div class="qr-code-row">
+                    {% if result.eipl_unique_batch_code %}
+                        {% for i in range(4) %}
+                            <div class="qr-code-item">
+                                {% set qr_data_uri = generate_qr_code(result.name) %}
+                                {% if qr_data_uri %}
+                                    <img src="{{ qr_data_uri }}" alt="Purchase Receipt URL" />
+                                    <span>{{ result.eipl_unique_batch_code }}</span>
+                                {% else %}
+                                    <span>QR generation failed for {{ result.name }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>  
+            <div id="unique-code-container2-{{loop.index}}" class="print-container unique-code-container2">
+                <div class="unique-code-grid2">
+                    {% if result.eipl_unique_batch_code %}
+                        {% for i in range(10) %}
+                            <div>
+                                <span class="label-text">EIPL Code:</span> {{ result.eipl_unique_batch_code }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>   
+        </div>
+        {% endfor %}
+        {% else %}
+            <p class="text-gray-600">No results found.</p>
+        {% endif %}
+    </div>
+    
+    <div id="qr-modal" class="modal-backdrop" onclick="closeQRCode()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeQRCode()">&times;</button>
+            <div class="text-center">
+                <img id="modal-qr-code" src="" alt="QR Code" class="mx-auto mb-4" style="width: 300px; height: 300px;">
+                <p id="modal-qr-text" class="text-lg font-semibold"></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dropdown selection handler
+        document.getElementById('item-selector').addEventListener('change', function() {
+            // Hide all result containers by removing the active class
+            document.querySelectorAll('.result-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            // Show the selected result container by adding the active class
+            const selectedIndex = this.value;
+            const selectedContainer = document.getElementById(`result-container-${selectedIndex}`);
+            selectedContainer.classList.add('active');
+        });
+
+        function showQRCode(index, grnName) {
+            const qrContainer = document.getElementById(`qr-data-${index}`);
+            const qrImage = qrContainer.querySelector('img');
+            const qrSrc = qrImage.src;
+            
+            const modal = document.getElementById('qr-modal');
+            const mainContent = document.getElementById('main-content');
+            const modalQRCode = document.getElementById('modal-qr-code');
+            const modalQRText = document.getElementById('modal-qr-text');
+            
+            modalQRCode.src = qrSrc;
+            modalQRText.textContent = grnName;
+            
+            modal.classList.add('active');
+            mainContent.classList.add('blur-content');
+        }
+
+        function closeQRCode() {
+            const modal = document.getElementById('qr-modal');
+            const mainContent = document.getElementById('main-content');
+            
+            modal.classList.remove('active');
+            mainContent.classList.remove('blur-content');
+        }
+
+        // Existing print functions
+        function printLabel(index) {
+            document.querySelectorAll('.print-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            const containerToPrint = document.getElementById(`print-container-${index}`);
+            containerToPrint.classList.add('active');
+            window.print();
+            containerToPrint.classList.remove('active');
+        }
+
+        function printUniqueCode(index) {
+            document.querySelectorAll('.print-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            const containerToPrint = document.getElementById(`unique-code-container-${index}`);
+            containerToPrint.classList.add('active');
+            window.print();
+            containerToPrint.classList.remove('active');
+        }
+        
+        function printUniqueCodeMultiple(index) {
+            document.querySelectorAll('.print-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            const containerToPrint = document.getElementById(`unique-code-container2-${index}`);
+            containerToPrint.classList.add('active');
+            window.print();
+            containerToPrint.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

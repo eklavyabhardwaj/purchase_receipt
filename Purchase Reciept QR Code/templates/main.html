@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Service</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='ELEC.png') }}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            background: rgb(225,255,255);
+            background: radial-gradient(circle, rgba(225,255,255,1) 0%, rgba(111,237,238,1) 50%, rgba(0,131,133,1) 100%);
+            color: white;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(221, 189, 7, 0.3);
+            color: #423c00;
+        }
+
+        /* Container for buttons to control layout */
+        .button-container {
+            display: flex;          /* Arrange buttons in a row */
+            justify-content: center; /* Space them evenly */
+            align-items: center;    /* Align vertically */
+            width: 80%;             /* Take up most of the screen width */
+            max-width: 800px;       /* Limit the width on larger screens */
+        }
+
+        button {
+            padding: 20px 40px;  /* Larger padding for bigger buttons */
+            font-size: 1.5em;   /* Larger font size */
+            margin: 20px;         /* Increased margin for spacing */
+            border: none;
+            border-radius: 10px;    /* Slightly more rounded corners */
+            background: rgb(0,8,81);
+            background: linear-gradient(90deg, rgba(0,8,81,1) 0%, rgba(28,181,224,1) 51%, rgba(0,8,81,1) 100%);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease; /* Added transform for a slight scale effect */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+            flex: 1; /* Make buttons share available space equally */
+            max-width: 400px; /* Prevent buttons from becoming too wide */
+            text-align: center; /* Center text within the button */
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05); /* Slight scale up on hover */
+        }
+
+        button:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1, .button-container {
+            animation: fadeIn 1s ease both;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to EIPL Unique Code Generator</h1>
+    <div class="button-container">
+        <button onclick="location.href='/purchase_reciept'">Via Purchase Reciept</button>
+        <button onclick="location.href='/work_order'">Via Work Order</button>
+    </div>
+</body>
+</html>
